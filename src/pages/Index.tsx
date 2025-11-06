@@ -8,6 +8,7 @@ import { LogOut, Zap, Trophy, Users, TrendingUp, Moon, Sun } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast';
 import ToneSelector from '@/components/ToneSelector';
 import LineCard from '@/components/LineCard';
+import { ImageUpload } from '@/components/ImageUpload';
 
 type ToneType = 'flirty' | 'funny' | 'teasing' | 'savage' | 'polite' | 'smart' | 'emotional' | 'respectful';
 
@@ -19,6 +20,8 @@ const Index = () => {
   const [replies, setReplies] = useState<Array<{ text: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [extractingText, setExtractingText] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -55,11 +58,50 @@ const Index = () => {
     navigate('/auth');
   };
 
+  const handleImageSelect = async (file: File) => {
+    setSelectedImage(file);
+    setExtractingText(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Image = reader.result as string;
+        
+        const { data, error } = await supabase.functions.invoke('extract-text-from-image', {
+          body: { image: base64Image }
+        });
+
+        if (error) throw error;
+        
+        setMessage(data.text || '');
+        toast({
+          title: "Text extracted! 📸",
+          description: "You can edit the message before generating replies",
+        });
+      };
+      reader.readAsDataURL(file);
+    } catch (error: any) {
+      console.error('Error extracting text:', error);
+      toast({
+        title: "Error",
+        description: "Failed to extract text from image. Please try typing instead.",
+        variant: "destructive",
+      });
+    } finally {
+      setExtractingText(false);
+    }
+  };
+
+  const handleClearImage = () => {
+    setSelectedImage(null);
+    setMessage('');
+  };
+
   const generateReplies = async () => {
-    if (!message.trim()) {
+    if (!message.trim() && !selectedImage) {
       toast({
         title: "Empty message",
-        description: "Please enter a message first!",
+        description: "Please enter a message or upload a screenshot!",
         variant: "destructive",
       });
       return;
@@ -162,11 +204,25 @@ const Index = () => {
             <div className="space-y-6">
               <div>
                 <label className="text-lg font-semibold mb-2 block">Their Message</label>
+                <ImageUpload
+                  onImageSelect={handleImageSelect}
+                  onClear={handleClearImage}
+                  selectedImage={selectedImage}
+                />
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">Or type manually</span>
+                  </div>
+                </div>
                 <Textarea
                   placeholder="Type or paste their message here..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   className="min-h-[120px] text-lg"
+                  disabled={extractingText}
                 />
               </div>
 
@@ -177,11 +233,11 @@ const Index = () => {
 
               <Button
                 onClick={generateReplies}
-                disabled={loading}
+                disabled={loading || extractingText}
                 className="w-full py-6 text-lg bg-primary text-primary-foreground shadow-neon hover:shadow-glow transition-smooth"
               >
                 <Zap className="mr-2 h-5 w-5" />
-                {loading ? 'Generating...' : 'Generate Replies'}
+                {extractingText ? 'Extracting text...' : loading ? 'Generating...' : 'Generate Replies'}
               </Button>
             </div>
           </Card>
