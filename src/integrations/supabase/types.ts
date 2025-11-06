@@ -14,41 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
-      battle_entries: {
+      challenge_entries: {
         Row: {
-          battle_id: string | null
+          challenge_id: string | null
           created_at: string | null
+          entry_text: string
           id: string
-          reply: string
+          likes: number | null
           user_id: string | null
-          votes: number | null
         }
         Insert: {
-          battle_id?: string | null
+          challenge_id?: string | null
           created_at?: string | null
+          entry_text: string
           id?: string
-          reply: string
+          likes?: number | null
           user_id?: string | null
-          votes?: number | null
         }
         Update: {
-          battle_id?: string | null
+          challenge_id?: string | null
           created_at?: string | null
+          entry_text?: string
           id?: string
-          reply?: string
+          likes?: number | null
           user_id?: string | null
-          votes?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "battle_entries_battle_id_fkey"
-            columns: ["battle_id"]
+            foreignKeyName: "challenge_entries_challenge_id_fkey"
+            columns: ["challenge_id"]
             isOneToOne: false
-            referencedRelation: "battles"
+            referencedRelation: "weekly_challenges"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "battle_entries_user_id_fkey"
+            foreignKeyName: "challenge_entries_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -56,81 +56,76 @@ export type Database = {
           },
         ]
       }
-      battles: {
+      line_comments: {
         Row: {
-          challenge_message: string
+          comment_text: string
           created_at: string | null
           id: string
-          status: string | null
+          line_id: string | null
+          user_id: string | null
         }
         Insert: {
-          challenge_message: string
+          comment_text: string
           created_at?: string | null
           id?: string
-          status?: string | null
+          line_id?: string | null
+          user_id?: string | null
         }
         Update: {
-          challenge_message?: string
+          comment_text?: string
           created_at?: string | null
           id?: string
-          status?: string | null
-        }
-        Relationships: []
-      }
-      community_board: {
-        Row: {
-          created_at: string | null
-          id: string
-          rizz_reply_id: string | null
-          upvotes: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          rizz_reply_id?: string | null
-          upvotes?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          rizz_reply_id?: string | null
-          upvotes?: number | null
+          line_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "community_board_rizz_reply_id_fkey"
-            columns: ["rizz_reply_id"]
+            foreignKeyName: "line_comments_line_id_fkey"
+            columns: ["line_id"]
             isOneToOne: false
-            referencedRelation: "rizz_replies"
+            referencedRelation: "rush_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "line_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
       }
-      rizz_replies: {
+      rush_lines: {
         Row: {
+          comments_count: number | null
           created_at: string | null
           generated_reply: string
           id: string
-          input_message: string
-          rizz_score: number
+          likes: number | null
+          screenshot_url: string | null
+          shared: boolean | null
           tone: string
           user_id: string | null
         }
         Insert: {
+          comments_count?: number | null
           created_at?: string | null
           generated_reply: string
           id?: string
-          input_message: string
-          rizz_score: number
+          likes?: number | null
+          screenshot_url?: string | null
+          shared?: boolean | null
           tone: string
           user_id?: string | null
         }
         Update: {
+          comments_count?: number | null
           created_at?: string | null
           generated_reply?: string
           id?: string
-          input_message?: string
-          rizz_score?: number
+          likes?: number | null
+          screenshot_url?: string | null
+          shared?: boolean | null
           tone?: string
           user_id?: string | null
         }
@@ -146,34 +141,58 @@ export type Database = {
       }
       users: {
         Row: {
-          average_rizz_score: number | null
+          badges: Json | null
           created_at: string | null
           id: string
-          rizz_personality: string | null
-          total_battles_lost: number | null
-          total_battles_won: number | null
+          points: number | null
           updated_at: string | null
           username: string | null
+          weekly_points: number | null
         }
         Insert: {
-          average_rizz_score?: number | null
+          badges?: Json | null
           created_at?: string | null
           id: string
-          rizz_personality?: string | null
-          total_battles_lost?: number | null
-          total_battles_won?: number | null
+          points?: number | null
           updated_at?: string | null
           username?: string | null
+          weekly_points?: number | null
         }
         Update: {
-          average_rizz_score?: number | null
+          badges?: Json | null
           created_at?: string | null
           id?: string
-          rizz_personality?: string | null
-          total_battles_lost?: number | null
-          total_battles_won?: number | null
+          points?: number | null
           updated_at?: string | null
           username?: string | null
+          weekly_points?: number | null
+        }
+        Relationships: []
+      }
+      weekly_challenges: {
+        Row: {
+          created_at: string | null
+          description: string
+          end_date: string
+          id: string
+          start_date: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          end_date: string
+          id?: string
+          start_date?: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          end_date?: string
+          id?: string
+          start_date?: string
+          title?: string
         }
         Relationships: []
       }
