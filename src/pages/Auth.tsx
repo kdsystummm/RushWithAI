@@ -58,7 +58,7 @@ const Auth = () => {
         if (error) throw error;
         toast({
           title: "Account created!",
-          description: "Welcome to RizzAI. Start improving your chat game!",
+          description: "Welcome to Rush With AI. Start improving your chat game!",
         });
       }
     } catch (error: any) {
@@ -76,8 +76,8 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center gradient-hero p-4">
       <Card className="w-full max-w-md p-8 shadow-primary">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gradient mb-2">RizzAI</h1>
-          <p className="text-muted-foreground">Never get left on read again</p>
+          <h1 className="text-4xl font-bold text-gradient mb-2">Rush With AI</h1>
+          <p className="text-muted-foreground">Your chat wingman—powered by AI</p>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">

@@ -4,22 +4,31 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { LogOut, Zap, Trophy, Users } from 'lucide-react';
+import { LogOut, Zap, Trophy, Users, TrendingUp, Moon, Sun } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ToneSelector from '@/components/ToneSelector';
-import RizzReplyCard from '@/components/RizzReplyCard';
+import LineCard from '@/components/LineCard';
 
-type ToneType = 'flirty' | 'funny' | 'teasing' | 'dominant' | 'romantic';
+type ToneType = 'flirty' | 'funny' | 'teasing' | 'savage' | 'polite' | 'smart' | 'emotional' | 'respectful';
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [selectedTone, setSelectedTone] = useState<ToneType>('flirty');
-  const [replies, setReplies] = useState<Array<{ text: string; score: number }>>([]);
+  const [replies, setReplies] = useState<Array<{ text: string }>>([]);
   const [loading, setLoading] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -65,10 +74,26 @@ const Index = () => {
       if (error) throw error;
       
       setReplies(data.replies || []);
+
+      // Award points for generating lines
+      if (user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('points')
+          .eq('id', user.id)
+          .single();
+        
+        if (userData) {
+          await supabase
+            .from('users')
+            .update({ points: (userData.points || 0) + 10 })
+            .eq('id', user.id);
+        }
+      }
       
       toast({
-        title: "Rizz generated! 🔥",
-        description: `${data.replies?.length || 0} smooth replies ready to use.`,
+        title: "Lines generated! 🔥",
+        description: `${data.replies?.length || 0} replies ready. +10 points earned!`,
       });
     } catch (error: any) {
       console.error('Error generating replies:', error);
@@ -92,17 +117,24 @@ const Index = () => {
       <header className="border-b bg-background/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gradient">RizzAI</h1>
-            <p className="text-sm text-muted-foreground">Never get left on read again</p>
+            <h1 className="text-3xl font-bold text-gradient">Rush With AI</h1>
+            <p className="text-sm text-muted-foreground">Never run out of lines again</p>
           </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/leaderboard')}>
               <Trophy className="h-4 w-4 mr-2" />
               Leaderboard
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/challenges')}>
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Challenges
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/feed')}>
               <Users className="h-4 w-4 mr-2" />
-              Battles
+              Feed
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setDarkMode(!darkMode)}>
+              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
@@ -118,10 +150,10 @@ const Index = () => {
           {/* Hero Section */}
           <div className="text-center mb-12">
             <h2 className="text-5xl font-bold mb-4">
-              What did they say? <span className="text-gradient">👀</span>
+              Got stuck in a chat? <span className="text-gradient">💬</span>
             </h2>
             <p className="text-xl text-muted-foreground">
-              Let AI help you craft the perfect response
+              Upload a screenshot or type the message—AI will give you the perfect reply
             </p>
           </div>
 
@@ -146,10 +178,10 @@ const Index = () => {
               <Button
                 onClick={generateReplies}
                 disabled={loading}
-                className="w-full py-6 text-lg gradient-primary text-white shadow-primary hover:shadow-glow transition-smooth"
+                className="w-full py-6 text-lg bg-primary text-primary-foreground shadow-neon hover:shadow-glow transition-smooth"
               >
                 <Zap className="mr-2 h-5 w-5" />
-                {loading ? 'Generating Magic...' : 'Generate Rizz Replies'}
+                {loading ? 'Generating...' : 'Generate Replies'}
               </Button>
             </div>
           </Card>
@@ -157,13 +189,12 @@ const Index = () => {
           {/* Replies Section */}
           {replies.length > 0 && (
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-center">Your Rizz Options 🔥</h3>
+              <h3 className="text-2xl font-bold text-center">Your Reply Options 💬</h3>
               <div className="space-y-4">
                 {replies.map((reply, index) => (
-                  <RizzReplyCard
+                  <LineCard
                     key={index}
                     reply={reply.text}
-                    score={reply.score}
                     index={index}
                   />
                 ))}
@@ -174,10 +205,10 @@ const Index = () => {
           {/* Empty State */}
           {replies.length === 0 && !loading && (
             <Card className="p-12 text-center gradient-card">
-              <div className="text-6xl mb-4">💬</div>
-              <h3 className="text-2xl font-semibold mb-2">Ready to level up your chat game?</h3>
+              <div className="text-6xl mb-4">🚀</div>
+              <h3 className="text-2xl font-semibold mb-2">Ready to Rush with AI?</h3>
               <p className="text-muted-foreground">
-                Paste their message above and let AI generate the perfect responses
+                Type or upload a screenshot—get perfect replies in seconds
               </p>
             </Card>
           )}

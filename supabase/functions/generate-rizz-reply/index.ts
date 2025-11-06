@@ -19,25 +19,29 @@ serve(async (req) => {
     }
 
     const toneInstructions: Record<string, string> = {
-      'flirty': '😏 Romantic Lover - Generate a smooth, charming, and flirty response that makes them smile.',
-      'funny': '😂 Funny Guy - Create a witty, humorous response with meme energy.',
-      'teasing': '😈 Teasing Devil - Make a playful, confident, slightly risky response.',
-      'dominant': '💪 Alpha - Generate a short, confident, dominant response.',
-      'romantic': '❤️ Smooth Operator - Create a calm, cool, and romantic response.'
+      'flirty': '😏 Flirty - Generate a smooth, charming response that makes them smile.',
+      'funny': '😂 Funny - Create a witty, humorous response with great energy.',
+      'teasing': '😜 Teasing - Make a playful, confident response with light banter.',
+      'savage': '😎 Savage - Generate a bold, direct, and slightly edgy response.',
+      'polite': '😊 Polite - Create a kind, respectful, and friendly response.',
+      'smart': '🤓 Smart - Generate an intellectual, thoughtful response.',
+      'emotional': '💔 Emotional - Create a deep, sincere, and heartfelt response.',
+      'respectful': '🙏 Respectful - Generate a thoughtful and considerate response.'
     };
 
-    const systemPrompt = `You are RizzAI, an expert at creating attractive, confident chat responses. 
-Your goal is to help users keep conversations alive and interesting.
+    const systemPrompt = `You are Rush AI, an expert at creating engaging, natural chat responses. 
+Your goal is to help users continue conversations smoothly and confidently.
 
 Tone: ${toneInstructions[tone as string] || toneInstructions['flirty']}
 
 Rules:
 1. Keep responses concise (1-2 sentences max)
-2. Be confident and engaging
+2. Be confident and natural
 3. Avoid being creepy or overly aggressive
-4. Match the energy of the conversation
+4. Match the energy and context of the conversation
 5. Create responses that invite continuation
 6. No emojis in the response itself
+7. Make it sound authentic, not scripted
 
 Generate 3 different response options.`;
 
@@ -51,7 +55,7 @@ Generate 3 different response options.`;
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Their message: "${message}"\n\nGenerate 3 different ${tone} responses. Format as JSON: {"replies": [{"text": "...", "score": 0-100}]}` }
+          { role: 'user', content: `Their message: "${message}"\n\nGenerate 3 different ${tone} responses. Format as JSON: {"replies": [{"text": "..."}]}` }
         ],
       }),
     });
@@ -76,8 +80,7 @@ Generate 3 different response options.`;
       const replies = aiResponse.split('\n').filter((r: string) => r.trim()).slice(0, 3);
       parsedResponse = {
         replies: replies.map((text: string) => ({
-          text: text.replace(/^\d+\.\s*/, '').trim(),
-          score: Math.floor(Math.random() * 20) + 80 // Random score 80-100
+          text: text.replace(/^\d+\.\s*/, '').trim()
         }))
       };
     }
