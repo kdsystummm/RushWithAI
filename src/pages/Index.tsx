@@ -4,11 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { LogOut, Zap, Trophy, Users, TrendingUp, Moon, Sun } from 'lucide-react';
+import { LogOut, Zap, Trophy, Users, TrendingUp, Moon, Sun, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ToneSelector from '@/components/ToneSelector';
 import LineCard from '@/components/LineCard';
 import { ImageUpload } from '@/components/ImageUpload';
+import { checkAndAwardBadges } from '@/lib/badgeAward';
+import { getBadgeEmoji, getBadgeName } from '@/lib/badges';
 
 type ToneType = 'flirty' | 'funny' | 'teasing' | 'savage' | 'polite' | 'smart' | 'emotional' | 'respectful';
 
@@ -22,6 +24,7 @@ const Index = () => {
   const [darkMode, setDarkMode] = useState(true);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [extractingText, setExtractingText] = useState(false);
+  const [sharingIndex, setSharingIndex] = useState<number | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -115,21 +118,72 @@ const Index = () => {
 
       if (error) throw error;
       
-      setReplies(data.replies || []);
+      const replies = data.replies || [];
+      setReplies(replies);
 
-      // Award points for generating lines
-      if (user) {
+      // Award points and save generated lines to database
+      if (user && replies.length > 0) {
+        // Save all generated lines to database (even if not shared)
+        const linesToInsert = replies.map((reply: { text: string }) => ({
+          user_id: user.id,
+          generated_reply: reply.text,
+          tone: selectedTone,
+          shared: false,
+          likes: 0,
+          comments_count: 0,
+        }));
+
+        const { error: insertError } = await supabase
+          .from('rush_lines')
+          .insert(linesToInsert);
+
+        if (insertError) {
+          console.error('Error saving generated lines:', insertError);
+          // Continue even if insert fails - points should still be awarded
+        }
+
+        // Get current user data and update points
         const { data: userData } = await supabase
           .from('users')
-          .select('points')
+          .select('points, weekly_points, badges')
           .eq('id', user.id)
           .single();
         
         if (userData) {
-          await supabase
+          const newPoints = (userData.points || 0) + 10;
+          const newWeeklyPoints = (userData.weekly_points || 0) + 10;
+          
+          // Update points
+          const { error: updateError } = await supabase
             .from('users')
-            .update({ points: (userData.points || 0) + 10 })
+            .update({ 
+              points: newPoints,
+              weekly_points: newWeeklyPoints,
+            })
             .eq('id', user.id);
+
+          if (updateError) {
+            console.error('Error updating points:', updateError);
+          } else {
+            // Check and award badges AFTER points are updated
+            const newBadges = await checkAndAwardBadges({
+              userId: user.id,
+              userStats: {
+                points: newPoints,
+                weekly_points: newWeeklyPoints,
+                badges: (userData.badges || []) as any,
+              },
+              action: 'generate',
+            });
+
+            // Show badge notification if earned
+            if (newBadges.length > 0) {
+              toast({
+                title: "Badge earned! 🏅",
+                description: `You earned: ${newBadges.map(id => `${getBadgeEmoji(id)} ${getBadgeName(id)}`).join(', ')}`,
+              });
+            }
+          }
         }
       }
       
@@ -146,6 +200,96 @@ const Index = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleShare = async (replyText: string, index: number) => {
+    if (!user) {
+      toast({
+        title: "Not authenticated",
+        description: "Please log in to share lines.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSharingIndex(index);
+    try {
+      // Check if this line already exists in database (from generation)
+      // If it exists, update it to shared=true, otherwise insert new
+      const { data: existingLines } = await supabase
+        .from('rush_lines')
+        .select('id, shared')
+        .eq('user_id', user.id)
+        .eq('generated_reply', replyText)
+        .eq('tone', selectedTone)
+        .eq('shared', false)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (existingLines && existingLines.length > 0) {
+        // Update existing line to shared
+        const { error } = await supabase
+          .from('rush_lines')
+          .update({ shared: true })
+          .eq('id', existingLines[0].id);
+
+        if (error) throw error;
+      } else {
+        // Insert new shared line
+        const { error } = await supabase
+          .from('rush_lines')
+          .insert({
+            user_id: user.id,
+            generated_reply: replyText,
+            tone: selectedTone,
+            shared: true,
+            likes: 0,
+            comments_count: 0,
+          });
+
+        if (error) throw error;
+      }
+
+      // Check and award badges for sharing AFTER database update
+      const { data: userData } = await supabase
+        .from('users')
+        .select('points, weekly_points, badges')
+        .eq('id', user.id)
+        .single();
+
+      if (userData) {
+        const newBadges = await checkAndAwardBadges({
+          userId: user.id,
+          userStats: {
+            points: userData.points || 0,
+            weekly_points: userData.weekly_points || 0,
+            badges: (userData.badges || []) as any,
+          },
+          action: 'share',
+        });
+
+        if (newBadges.length > 0) {
+          toast({
+            title: "Badge earned! 🏅",
+            description: `You earned: ${newBadges.map(id => `${getBadgeEmoji(id)} ${getBadgeName(id)}`).join(', ')}`,
+          });
+        }
+      }
+
+      toast({
+        title: "Shared! 🎉",
+        description: "Your line has been shared to the feed.",
+      });
+    } catch (error: any) {
+      console.error('Error sharing line:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to share line. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSharingIndex(null);
     }
   };
 
@@ -174,6 +318,10 @@ const Index = () => {
             <Button variant="ghost" size="sm" onClick={() => navigate('/feed')}>
               <Users className="h-4 w-4 mr-2" />
               Feed
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
+              <User className="h-4 w-4 mr-2" />
+              Profile
             </Button>
             <Button variant="ghost" size="icon" onClick={() => setDarkMode(!darkMode)}>
               {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -252,6 +400,8 @@ const Index = () => {
                     key={index}
                     reply={reply.text}
                     index={index}
+                    onShare={() => handleShare(reply.text, index)}
+                    isSharing={sharingIndex === index}
                   />
                 ))}
               </div>

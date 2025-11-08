@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Trophy, Medal } from 'lucide-react';
+import { ArrowLeft, Trophy, Medal, User } from 'lucide-react';
+import { BadgeDisplay } from '@/components/BadgeDisplay';
+import type { BadgeId } from '@/lib/badges';
 
 interface LeaderboardEntry {
   id: string;
   username: string | null;
   points: number;
   weekly_points: number;
+  badges: BadgeId[] | null;
 }
 
 const Leaderboard = () => {
@@ -27,7 +30,7 @@ const Leaderboard = () => {
       const sortBy = timeframe === 'weekly' ? 'weekly_points' : 'points';
       const { data, error } = await supabase
         .from('users')
-        .select('id, username, points, weekly_points')
+        .select('id, username, points, weekly_points, badges')
         .order(sortBy, { ascending: false })
         .limit(50);
 
@@ -50,14 +53,20 @@ const Leaderboard = () => {
   return (
     <div className="min-h-screen gradient-hero">
       <header className="border-b bg-background/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gradient">Leaderboard</h1>
-            <p className="text-sm text-muted-foreground">Top performers</p>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gradient">Leaderboard</h1>
+              <p className="text-sm text-muted-foreground">Top performers</p>
+            </div>
           </div>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
+            <User className="h-4 w-4 mr-2" />
+            Profile
+          </Button>
         </div>
       </header>
 
@@ -90,6 +99,11 @@ const Leaderboard = () => {
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold">{entry.username || 'Anonymous'}</p>
+                      {entry.badges && entry.badges.length > 0 && (
+                        <div className="mt-1">
+                          <BadgeDisplay badgeIds={entry.badges} size="sm" />
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-primary">

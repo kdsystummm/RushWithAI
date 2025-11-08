@@ -7,9 +7,10 @@ interface LineCardProps {
   reply: string;
   index: number;
   onShare?: () => void;
+  isSharing?: boolean;
 }
 
-const LineCard = ({ reply, index, onShare }: LineCardProps) => {
+const LineCard = ({ reply, index, onShare, isSharing }: LineCardProps) => {
   const { toast } = useToast();
 
   const handleCopy = () => {
@@ -38,9 +39,10 @@ const LineCard = ({ reply, index, onShare }: LineCardProps) => {
               variant="outline"
               size="icon"
               onClick={onShare}
+              disabled={isSharing}
               className="hover:bg-accent hover:text-accent-foreground transition-smooth"
             >
-              <Share2 className="h-4 w-4" />
+              <Share2 className={`h-4 w-4 ${isSharing ? 'animate-pulse' : ''}`} />
             </Button>
           )}
         </div>

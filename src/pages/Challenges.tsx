@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Trophy, Heart } from 'lucide-react';
+import { ArrowLeft, Trophy, Heart, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Challenge {
@@ -114,14 +114,20 @@ const Challenges = () => {
   return (
     <div className="min-h-screen gradient-hero">
       <header className="border-b bg-background/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gradient">Weekly Challenge</h1>
-            <p className="text-sm text-muted-foreground">Show your creativity</p>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gradient">Weekly Challenge</h1>
+              <p className="text-sm text-muted-foreground">Show your creativity</p>
+            </div>
           </div>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/profile')}>
+            <User className="h-4 w-4 mr-2" />
+            Profile
+          </Button>
         </div>
       </header>
 
