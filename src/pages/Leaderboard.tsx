@@ -35,7 +35,10 @@ const Leaderboard = () => {
         .limit(50);
 
       if (error) throw error;
-      setLeaderboard(data || []);
+      setLeaderboard((data || []).map(entry => ({
+        ...entry,
+        badges: (entry.badges as unknown as BadgeId[]) || []
+      })));
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
     } finally {

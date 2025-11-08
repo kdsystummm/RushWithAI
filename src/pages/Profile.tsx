@@ -56,8 +56,13 @@ const Profile = () => {
 
       if (error) throw error;
       
-      setProfile(data);
-      setEditedUsername(data?.username || '');
+      if (data) {
+        setProfile({
+          ...data,
+          badges: (data.badges as unknown as BadgeId[]) || []
+        });
+        setEditedUsername(data?.username || '');
+      }
     } catch (error: any) {
       console.error('Error fetching profile:', error);
       toast({
