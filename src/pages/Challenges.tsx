@@ -34,7 +34,16 @@ const Challenges = () => {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
     fetchCurrentChallenge();
+    checkAndAwardBadges();
   }, []);
+
+  const checkAndAwardBadges = async () => {
+    try {
+      await supabase.functions.invoke('award-challenge-badges');
+    } catch (error) {
+      console.error('Error checking for badge awards:', error);
+    }
+  };
 
   const fetchCurrentChallenge = async () => {
     try {
